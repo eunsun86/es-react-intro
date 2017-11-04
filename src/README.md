@@ -159,3 +159,155 @@ class Board extends React.Component {
 ```
 
 이제 다시 네모칸을 클릭할수 있게 되었고, 각각의 보드판에 보여주는 정보는 `Board` 컴포넌트가 관리하게 수정되었습니다. `Board`의 `state`이 수정되면, 각각의 `Square`는 다시 rendering됩니다.
+
+## 플레이어 순서 바꾸기
+
+현재 우리 게임의 아주 큰 문제점은 한사람만 참여할수 있다는 점입니다. 한번 고쳐볼까요?
+
+첫 순서는 X가 되도록 초기값을 설정해주세요. `Board` 컴포넌트의 `constructor`를 다음과 같이 수정해주세요.
+```javascript
+class Board extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      squares: Array(9).fill(null),
+      xIsNext: true
+    };
+  }
+```
+
+매번 네모를 클릭할때마다, 플레이어를 바꿔주어야 합니다. 누구의 순서인지는 이제 `xIsNext`의 값을 통해 결정합니다. 그리고 매번 클릭을 할때마다, `xIsNext`의 값을 바꿔줌으로서 다음 순서를 알수 있습니다. `handleClick` 함수에 `xIsNext`를 업데이트하는 부분을 수정해주어야 합니다.
+```javascript
+handleClick(i) {
+  const squares = this.state.squares.slice();
+  squares[i] = this.state.xIsNext ? 'X' : 'O';
+  this.setState({
+    squares: squares,
+    xIsNext: !this.state.xIsNext,
+  });
+}
+```
+
+이제 X와 O의 순서가 매번 바뀝니다. 이번에는 `Board` 컴포넌트의 `status`를 바꿔서 `render`해주도록 수정해주셔야 합니다. 그래야 다음 순서가 누구인지를 보여줄수 있겠죠.
+```javascript
+render() {
+  const status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+
+  return (
+    // 나머지는 동일합니다.
+```
+
+위처럼 변경하고 나면, `Board` 컴포넌트는 아래와 같습니다.
+```javascript
+class Board extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      squares: Array(9).fill(null),
+      xIsNext: true,
+    };
+  }
+
+  handleClick(i) {
+    const squares = this.state.squares.slice();
+    squares[i] = this.state.xIsNext ? 'X' : 'O';
+    this.setState({
+      squares: squares,
+      xIsNext: !this.state.xIsNext,
+    });
+  }
+
+  renderSquare(i) {
+    return (
+      <Square
+        value={this.state.squares[i]}
+        onClick={() => this.handleClick(i)}
+      />
+    );
+  }
+
+  render() {
+    const status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+
+    return (
+      <div>
+        <div className="status">{status}</div>
+        <div className="board-row">
+          {this.renderSquare(0)}
+          {this.renderSquare(1)}
+          {this.renderSquare(2)}
+        </div>
+        <div className="board-row">
+          {this.renderSquare(3)}
+          {this.renderSquare(4)}
+          {this.renderSquare(5)}
+        </div>
+        <div className="board-row">
+          {this.renderSquare(6)}
+          {this.renderSquare(7)}
+          {this.renderSquare(8)}
+        </div>
+      </div>
+    );
+  }
+}
+```
+
+## 승부 판별하기
+
+누가 게임에서 이겼는지를 보여주는 기능을 추가해보겠습니다. 아래와 같은 Helper 함수를 파일에 추가해주세요.
+```javascript
+function calculateWinner(squares) {
+  const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
+  for (let i = 0; i < lines.length; i++) {
+    const [a, b, c] = lines[i];
+    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+      return squares[a];
+    }
+  }
+  return null;
+}
+```
+
+우리는 위의 Helper 함수를 `render` 메소드에서 사용하여 X와 O중에 누가 이겼는지를 보여줄겁니다.
+
+`Board` 컴포넌트의 `render` 메소드를 아래와 같이 수정해주세요.
+```javascript
+render() {
+    const winner = calculateWinner(this.state.squares);
+    let status;
+    if (winner) {
+      status = 'Winner: ' + winner;
+    } else {
+      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+    }
+
+    return (
+      // 나머지는 동일합니다.
+```
+
+승리자가 결정되었을 경우, 더 이상 클릭을 할 수 없도록 다음과 같이 바꿔주어야 합니다.
+```javascript
+handleClick(i) {
+  const squares = this.state.squares.slice();
+  if (calculateWinner(squares) || squares[i]) {
+    return;
+  }
+  squares[i] = this.state.xIsNext ? 'X' : 'O';
+  this.setState({
+    squares: squares,
+    xIsNext: !this.state.xIsNext,
+  });
+}
+```
+
+이제 기본적인 게임의 기능이 완성되었습니다!
