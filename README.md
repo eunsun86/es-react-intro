@@ -1,6 +1,6 @@
 ## 가이드
 
-**`src`디렉토리에 있는 README.md를 확인하세요.**
+**[`src`디렉토리](https://github.com/vanilla-coding/react-sample/tree/v0-intro/src)를 확인하세요.**
 
 ## 디렉토리 구조
 
