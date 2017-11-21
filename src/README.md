@@ -1,215 +1,80 @@
-# Day 2. 조금 더 기본기 익히기
+# Day 3. 플레이 히스토리 저장
 
-## 상위 컴포넌트로 `State` 올려주기
+게임을 진행하며, 모든 순간의 히스토리를 저장하고 또 언제든지 과거의 상태로 돌아갈 수 있도록 한번 만들어 봅시다. 이미 우리는 한번 플레이가 진행될때마다 각각의 네모칸에 들어가야할 값들을 새롭게 생성하여 보여주고 있습니다. 그래서 이 형식을 살짝만 바꾸어 주면, 쉽게 구현이 가능할 것 같습니다.
 
-지금 현재의 코드에서 `Square` 컴포넌트의 `state`는 그 안에 갇혀있고 해당 컴포넌트이외의 그 누구도 알지 못합니다. 누가 게임에서 이겼는지를 판단하기 위해서는 `Square` 컴포넌트 각각의 `state`을 한군데로 모아서 계산해야 합니다.
-
-단순하게 `Board` 컴포넌트가 `Square` 컴포넌트 각각의 `state`을 수집해서 판단해야 한다고 생각하실수도 있습니다. 그런 방법도 물론 불가능한 것은 아니지만, 그런 방식은 보통 유지/보수가 힘들고 이해하기 난해한 코드로 변질되는 경향이 있습니다.
-
-가장 좋은 방법은 상위 컴포넌트인 `Board`에 `state`을 만들어 관리하는 것입니다. 그리고 `Board` 컴포넌트가 각각의 `Square`에게 무엇을 보여줘야할지를 명령하는 것입니다.
-
-**만약 여러개의 Child Component로부터 혹은 Child Component끼리의 커뮤니케이션이 필요하다면, 해당 `state`에 대한 정보를 상위 컴포넌트로 올려주고 상위 컴포넌트가 다시 다른 Child Component에게 `props`를 이용하여 알려주면 됩니다.**
-
-`state`을 상위 컴포넌트로 올려주는 방식은 `React`에서 아주 흔한 유지/보수 방식입니다. `Board` 컴포넌트에게 `constructor` 함수를 만들어주시고 각각의 `Square`에게 초기값으로 넘겨줄 정보들을 담고 있는 배열을 만들어주세요.
+다음과 같은 형태로 히스토리를 저장해보도록 하겠습니다.
 
 ```javascript
-class Board extends React.Component {
+history = [
+  {
+    squares: [
+      null, null, null,
+      null, null, null,
+      null, null, null
+    ]
+  },
+  {
+    squares: [
+      null, null, null,
+      null, null, null,
+      null, null, null
+    ]
+  },
+  {
+    squares: [
+      null, null, null,
+      null, null, null,
+      null, null, null
+    ]
+  }
+  // ...
+];
+```
+
+그리고 우리는 최상위 컴포넌트인 `Game` 컴포넌트가 이런 히스토리들의 존재를 보여주도록 하겠습니다. 지난 시간에 `Square` 컴포넌트에서 `state`을 빼서 `Board` 컴포넌트로 올린 것과 비슷하게, 이번에는 `Board` 컴포넌트에서 `Game` 컴포넌트로 올려보겠습니다. 그래야 최상위 컴포넌트인 `Game` 컴포넌트가 필요한 정보들을 갖고 있을 수 있겠죠.
+
+우선 `Game` 컴포넌트의 `constructor`를 다음과 같이 만들어 주세요.
+```javascript
+class Game extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      squares: Array(9).fill(null),
-    };
-  }
-
-  renderSquare(i) {
-    return <Square value={i} />;
-  }
-
-  render() {
-    const status = 'Next player: X';
-
-    return (
-      <div>
-        <div className="status">{status}</div>
-        <div className="board-row">
-          {this.renderSquare(0)}
-          {this.renderSquare(1)}
-          {this.renderSquare(2)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(3)}
-          {this.renderSquare(4)}
-          {this.renderSquare(5)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(6)}
-          {this.renderSquare(7)}
-          {this.renderSquare(8)}
-        </div>
-      </div>
-    );
-  }
-}
-```
-
-우리는 `this.state.squares` 배열에 전체적인 보드판의 정보를 다음과 같은 예시처럼 입력할 예정입니다.
-```javascript
-[
-  'O', null, 'X',
-  'X', 'X', 'O',
-  'O', null, null,
-]
-```
-
-현재 `Board` 컴포넌트의 `renderSquare` 메소드는 다음과 같이 짜여 있습니다.
-```javascript
-renderSquare(i) {
-  return <Square value={i} />;
-}
-```
-
-보여주어야할 값을 받는 `value`라는 `prop`을 만들어주세요.
-```javascript
-renderSquare(i) {
-  return <Square value={this.state.squares[i]} />;
-}
-```
-
-이번에는 각각의 `Square` 컴포넌트가 클릭되었을때를 처리해주어야 합니다. 현재는 `Board` 컴포넌트가 보드판에 어떤 값들을 각각 보여주어야하는지에 대한 정보를 저장하고 있습니다. 그래서 `Square` 컴포넌트가 클릭되었을때, `Board` 컴포넌트가 소유하고 있는 보드판에 대한 `state`를 업데이트해주어야 합니다. 하지만 `Square` 컴포넌트는 `Board` 컴포넌트의 `state`를 직접적으로 수정할수는 없습니다.
-
-이런 경우에 일반적인 패턴은, `Board` 컴포넌트가 각각의 `Square` 컴포넌트에게 클릭 핸들러 함수를 보내주는 것입니다. `renderSquare` 함수를 다음과 같이 수정해보세요.
-```javascript
-renderSquare(i) {
-  return (
-    <Square
-      value={this.state.squares[i]}
-      onClick={() => this.handleClick(i)}
-    />
-  );
-}
-```
-
-이제 우리는 `Board`에서 `Square`로 두가지를 내려보내고 있습니다(`value` & `onClick`). 다음과 같이 `Square` 컴포넌트를 수정해보세요.
-```javascript
-class Square extends React.Component {
-  render() {
-    return (
-      <button className="square" onClick={() => this.props.onClick()}>
-        {this.props.value}
-      </button>
-    );
-  }
-}
-```
-
-이제 `Square` 컴포넌트가 클릭되었을때, `Board`에게 물려받은 `onClick`에 해당하는 함수가 실행됩니다.
-
-**NOTE: React 컴포넌트에게 `onClick`이라는 `prop`은 특별한 기능이 있습니다. 이벤트 핸들러를 추가할때, `on*`이라는 패턴을 이용합니다.**
-
-네모칸을 한번 클릭해보세요. 에러가 발생할겁니다. 왜냐하면 아직 `handleClick`이라는 함수를 만들어주지 않았기 때문입니다. 다음과 같이 `Board` 컴포넌트를 수정해보세요.
-```javascript
-class Board extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      squares: Array(9).fill(null),
-    };
-  }
-
-  handleClick(i) {
-    const squares = this.state.squares.slice();
-    squares[i] = 'X';
-    this.setState({squares: squares});
-  }
-
-  renderSquare(i) {
-    return (
-      <Square
-        value={this.state.squares[i]}
-        onClick={() => this.handleClick(i)}
-      />
-    );
-  }
-
-  render() {
-    const status = 'Next player: X';
-
-    return (
-      <div>
-        <div className="status">{status}</div>
-        <div className="board-row">
-          {this.renderSquare(0)}
-          {this.renderSquare(1)}
-          {this.renderSquare(2)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(3)}
-          {this.renderSquare(4)}
-          {this.renderSquare(5)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(6)}
-          {this.renderSquare(7)}
-          {this.renderSquare(8)}
-        </div>
-      </div>
-    );
-  }
-}
-```
-
-이제 다시 네모칸을 클릭할수 있게 되었고, 각각의 보드판에 보여주는 정보는 `Board` 컴포넌트가 관리하게 수정되었습니다. `Board`의 `state`이 수정되면, 각각의 `Square`는 다시 rendering됩니다.
-
-## 플레이어 순서 바꾸기
-
-현재 우리 게임의 아주 큰 문제점은 한사람만 참여할수 있다는 점입니다. 한번 고쳐볼까요?
-
-첫 순서는 X가 되도록 초기값을 설정해주세요. `Board` 컴포넌트의 `constructor`를 다음과 같이 수정해주세요.
-```javascript
-class Board extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      squares: Array(9).fill(null),
-      xIsNext: true
-    };
-  }
-```
-
-매번 네모를 클릭할때마다, 플레이어를 바꿔주어야 합니다. 누구의 순서인지는 이제 `xIsNext`의 값을 통해 결정합니다. 그리고 매번 클릭을 할때마다, `xIsNext`의 값을 바꿔줌으로서 다음 순서를 알수 있습니다. `handleClick` 함수에 `xIsNext`를 업데이트하는 부분을 수정해주어야 합니다.
-```javascript
-handleClick(i) {
-  const squares = this.state.squares.slice();
-  squares[i] = this.state.xIsNext ? 'X' : 'O';
-  this.setState({
-    squares: squares,
-    xIsNext: !this.state.xIsNext,
-  });
-}
-```
-
-이제 X와 O의 순서가 매번 바뀝니다. 이번에는 `Board` 컴포넌트의 `status`를 바꿔서 `render`해주도록 수정해주셔야 합니다. 그래야 다음 순서가 누구인지를 보여줄수 있겠죠.
-```javascript
-render() {
-  const status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
-
-  return (
-    // 나머지는 동일합니다.
-```
-
-위처럼 변경하고 나면, `Board` 컴포넌트는 아래와 같습니다.
-```javascript
-class Board extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      squares: Array(9).fill(null),
+      history: [{
+        squares: Array(9).fill(null),
+      }],
       xIsNext: true,
     };
   }
 
+  render() {
+    return (
+      <div className="game">
+        <div className="game-board">
+          <Board />
+        </div>
+        <div className="game-info">
+          <div>{/* status */}</div>
+          <ol>{/* TODO */}</ol>
+        </div>
+      </div>
+    );
+  }
+}
+```
+
+그리고 `Board` 컴포넌트가 `squares`를 `props`로 받을 수 있게끔 수정하고 `onClick`도 `Game` 컴포넌트가 지정해주도록 바꾸어 보겠습니다. 그리고 각각의 `square`가 어떤 값인지를 받아서 알기 위해, 그 위치도 보내주겠습니다.
+
+1. `Board` 컴포넌트에서 `constructor`를 지우세요.
+2. `Board` 컴포넌트의 `renderSquare` 메소드에서 `this.state.squares[i]`를 `this.props.squares[i]`로 수정해주세요.
+3. `Board` 컴포넌트의 `renderSquare` 메소드에서 `this.handleClick(i)`를 `this.props.onClick(i)`로 수정해주세요.
+
+```javascript
+class Board extends React.Component {
   handleClick(i) {
     const squares = this.state.squares.slice();
+    if (calculateWinner(squares) || squares[i]) {
+      return;
+    }
     squares[i] = this.state.xIsNext ? 'X' : 'O';
     this.setState({
       squares: squares,
@@ -220,14 +85,20 @@ class Board extends React.Component {
   renderSquare(i) {
     return (
       <Square
-        value={this.state.squares[i]}
-        onClick={() => this.handleClick(i)}
+        value={this.props.squares[i]}
+        onClick={() => this.props.onClick(i)}
       />
     );
   }
 
   render() {
-    const status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+    const winner = calculateWinner(this.state.squares);
+    let status;
+    if (winner) {
+      status = 'Winner: ' + winner;
+    } else {
+      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+    }
 
     return (
       <div>
@@ -253,61 +124,220 @@ class Board extends React.Component {
 }
 ```
 
-## 승부 판별하기
+`Game` 컴포넌트의 `render` 메소드는 가장 최근의 히스토리 엔트리를 보여주어야 하고, 누구의 순번인지를 보여주어야 합니다.
 
-누가 게임에서 이겼는지를 보여주는 기능을 추가해보겠습니다. 아래와 같은 Helper 함수를 파일에 추가해주세요.
 ```javascript
-function calculateWinner(squares) {
-  const lines = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6],
-  ];
-  for (let i = 0; i < lines.length; i++) {
-    const [a, b, c] = lines[i];
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
-    }
+render() {
+  const history = this.state.history;
+  const current = history[history.length - 1];
+  const winner = calculateWinner(current.squares);
+
+  let status;
+  if (winner) {
+    status = 'Winner: ' + winner;
+  } else {
+    status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
   }
-  return null;
+
+  return (
+    <div className="game">
+      <div className="game-board">
+        <Board
+          squares={current.squares}
+          onClick={(i) => this.handleClick(i)}
+        />
+
+      </div>
+      <div className="game-info">
+        <div>{status}</div>
+        <ol>{/* TODO */}</ol>
+      </div>
+    </div>
+  );
 }
 ```
 
-우리는 위의 Helper 함수를 `render` 메소드에서 사용하여 X와 O중에 누가 이겼는지를 보여줄겁니다.
+이제 `Game` 컴포넌트가 `status`를 보여주기 때문에, `<div className="status">{status}</div>` 부분과 `status`를 계산하는 부분은 `Board` 컴포넌트의 `render` 메소드에서 지워도 됩니다.
 
-`Board` 컴포넌트의 `render` 메소드를 아래와 같이 수정해주세요.
 ```javascript
 render() {
-    const winner = calculateWinner(this.state.squares);
-    let status;
-    if (winner) {
-      status = 'Winner: ' + winner;
-    } else {
-      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
-    }
-
-    return (
-      // 나머지는 동일합니다.
+  return (
+    <div>
+      <div className="board-row">
+        {this.renderSquare(0)}
+        {this.renderSquare(1)}
+        {this.renderSquare(2)}
+      </div>
+      <div className="board-row">
+        {this.renderSquare(3)}
+        {this.renderSquare(4)}
+        {this.renderSquare(5)}
+      </div>
+      <div className="board-row">
+        {this.renderSquare(6)}
+        {this.renderSquare(7)}
+        {this.renderSquare(8)}
+      </div>
+    </div>
+  );
+}
 ```
 
-승리자가 결정되었을 경우, 더 이상 클릭을 할 수 없도록 다음과 같이 바꿔주어야 합니다.
+이번에는 `handleClick`을 `Board` 컴포넌트에서 `Game` 컴포넌트로 옮겨야 합니다.
+
+그리고 `Game` 컴포넌트의 구조가 조금 다르기 때문에 약간의 수정이 필요합니다. `Game` 컴포넌트의 `handleClick` 메소드는 히스토리에 새로운 히스토리를 생성해서 넣어주어야 합니다.
+
 ```javascript
 handleClick(i) {
-  const squares = this.state.squares.slice();
+  const history = this.state.history;
+  const current = history[history.length - 1];
+  const squares = current.squares.slice();
   if (calculateWinner(squares) || squares[i]) {
     return;
   }
   squares[i] = this.state.xIsNext ? 'X' : 'O';
   this.setState({
-    squares: squares,
+    history: history.concat([{
+      squares: squares,
+    }]),
     xIsNext: !this.state.xIsNext,
   });
 }
 ```
 
-이제 기본적인 게임의 기능이 완성되었습니다!
+이전의 게임 상태들을 보여주는 기능을 시도해봅시다. 첫 시간에 배웠듯이, React Element들은 단지 자바스크립트 객체일뿐이기 때문에 일반적인 자바스크립트 객체와 마찬가지로 여러가지를 할 수 있습니다. 여러개의 리스트를 보여주기 위해서는, React Element들로 이루어진 배열을 넘겨주면 됩니다. 가장 흔하게 쓰이는 방식은 `map`을 이용한 방식입니다.
+
+`Game` 컴포넌트의 `render` 메소드에 다음과 같이 적용해보세요.
+```javascript
+render() {
+  const history = this.state.history;
+  const current = history[history.length - 1];
+  const winner = calculateWinner(current.squares);
+
+  const moves = history.map((step, move) => {
+    const desc = move ?
+      'Go to move #' + move :
+      'Go to game start';
+
+    return (
+      <li>
+        <button onClick={() => this.jumpTo(move)}>{desc}</button>
+      </li>
+    );
+  });
+
+  let status;
+
+  if (winner) {
+    status = 'Winner: ' + winner;
+  } else {
+    status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+  }
+
+  return (
+    <div className="game">
+      <div className="game-board">
+        <Board
+          squares={current.squares}
+          onClick={(i) => this.handleClick(i)}
+        />
+      </div>
+      <div className="game-info">
+        <div>{status}</div>
+        <ol>{moves}</ol>
+      </div>
+    </div>
+  );
+}
+```
+
+모든 히스토리의 단계마다 우리는 버튼이 담긴 `<li>`를 생성하고 클릭 핸들러를 보내줍니다. 위와 같이 수정하셨다면, 히스토리상에서 이전으로 돌아가는게 가능할 겁니다.
+
+그리고 지금과 같은 상태에서 콘솔을 확인해보시면 아래와 같은 메시지를 보실겁니다.
+```
+Warning: Each child in an array or iterator should have a unique “key” prop. Check the render method of “Game”.
+```
+
+React Element에서 `key`라는 속성은 특별한 의미가 있습니다. React가 자식들을 업데이트할때 내부적으로 해당 레퍼런스를 기억해두고 조금 더 효율적으로 업데이트하기 위해서 존재합니다. 그래서 항상 여러개의 동일한 React Element들을 다이나믹하게 보여줘야하는 경우에는 `key` 값을 주는 것이 좋습니다.
+
+이제 우리의 히스토리를 보여줄때, `key`값을 주도록 해보죠. `Game` 컴포넌트의 `render` 메소드를 다음과 같이 바꿔보세요.
+
+```javascript
+const moves = history.map((step, move) => {
+  const desc = move ?
+    'Go to move #' + move :
+    'Go to game start';
+  return (
+    <li key={move}>
+      <button onClick={() => this.jumpTo(move)}>{desc}</button>
+    </li>
+  );
+});
+```
+
+버튼을 누르면 현재 에러가 발생할겁니다. `jumpTo`라는 메소드가 없기 때문이죠. 우선, `Game` 컴포넌트의 `state`에 우리가 현재 어떤 스텝을 보는 중인지를 판별할 새로운 키/밸류를 아래와 같이 추가해주세요.
+
+```javascript
+class Game extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      history: [{
+        squares: Array(9).fill(null),
+      }],
+      stepNumber: 0,
+      xIsNext: true,
+    };
+  }
+```
+
+다음으로 우리는 `jumpTo` 메소드를 `Game` 컴포넌트에 구현해야 합니다. 이때 중요한 것은, `xIsNext`도 함께 업데이트되어야 합니다.
+
+```javascript
+  handleClick(i) {
+    // 이전과 동일
+  }
+
+  jumpTo(step) {
+    this.setState({
+      stepNumber: step,
+      xIsNext: (step % 2) === 0,
+    });
+  }
+
+  render() {
+    // 이전과 동일
+  }
+```
+
+그리고 이제는 새로운 플레이가 추가될때마다 `stepNumber`를 업데이트해주어야 합니다.
+
+```javascript
+  handleClick(i) {
+    const history = this.state.history.slice(0, this.state.stepNumber + 1);
+    const current = history[history.length - 1];
+    const squares = current.squares.slice();
+    if (calculateWinner(squares) || squares[i]) {
+      return;
+    }
+    squares[i] = this.state.xIsNext ? 'X' : 'O';
+    this.setState({
+      history: history.concat([{
+        squares: squares
+      }]),
+      stepNumber: history.length,
+      xIsNext: !this.state.xIsNext,
+    });
+  }
+```
+
+또 각각의 히스토리를 보여주기 위해, `Game` 컴포넌트의 `render` 메소드도 업데이트가 필요합니다.
+
+```javascript
+  render() {
+    const history = this.state.history;
+    const current = history[this.state.stepNumber];
+    const winner = calculateWinner(current.squares);
+
+    // 이하 동일
+```
